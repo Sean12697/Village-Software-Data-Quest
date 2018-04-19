@@ -4,9 +4,12 @@ var arr;
 var jsonResults = [];
 const size = 10;
 
+var startTime;
+
 function init() {
-    // download(generateTestData(100, 100), 'test.csv', 'text/plain');
-    getData('test.csv');
+    // download(generateTestData(1000, 1000), 'sample.csv', 'text/plain');
+    startTime = new Date().getTime();
+    getData('sample.csv');
 }
 
 function afterDataCollected() {
@@ -20,24 +23,32 @@ function afterDataCollected() {
     } jsonResults = jsonResults.sort((a, b) => b.total - a.total);
     console.log(jsonResults);
 
-    var uniquePlots = [];
-    for (var i = 1; i < jsonResults.length; i++) {
-        var ovrlp = false; // gpi = greaterPlotIndex
-        for (var gpi = i-1; gpi > 0 && !ovrlp; gpi--) if (overlap(jsonResults[i], jsonResults[gpi])) ovrlp = true; 
-        if (!ovrlp) uniquePlots.push(jsonResults[i]);
-    } console.log(uniquePlots);
-
+    var topPlots = [];
+    for (var i = 0; i < 100; i++) topPlots.push(jsonResults[i]); // do teams * 5 instead of 100 to ensure we claim
+    uniquePlots = getUniquePlots(topPlots);
+    console.log("100 Top Unique Plots found in " + (new Date().getTime() - startTime) + "ms!");
+    console.log(uniquePlots);
     drawOnCanvas(uniquePlots);
 }
 
 function drawOnCanvas(plots) {
     var c = document.getElementById("myCanvas");
     var ctx = c.getContext("2d");
-    ctx.scale(5,5);
+    ctx.scale(0.5,0.5);
     for (var i = 0; i < plots.length; i++) {
         ctx.fillStyle = randomHex();
         ctx.fillRect(plots[i].x, plots[i].y, size, size);   
-    }
+    } 
+    console.log("Drawn Canvas in " + (new Date().getTime() - startTime) + "ms!");
+}
+
+function getUniquePlots(plots) {
+    var uniquePlots = [];
+    for (var i = 0; i < plots.length; i++) {
+        var ovrlp = false; // gpi = greaterPlotIndex
+        for (var gpi = i-1; gpi > 0 && !ovrlp; gpi--) if (overlap(plots[i], plots[gpi])) ovrlp = true; 
+        if (!ovrlp) uniquePlots.push(plots[i]);
+    } return uniquePlots;
 }
 
 // https://stackoverflow.com/questions/1152024/best-way-to-generate-a-random-color-in-javascript

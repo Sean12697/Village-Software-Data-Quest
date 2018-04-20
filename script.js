@@ -15,53 +15,100 @@ function init() {
     getData(['GoldCsv.csv', 'IronCsv.csv', 'OilCsv.csv', 'WheatCsv.csv'], [], values);
 }
 
+// xml request method specified from: https://stackoverflow.com/questions/14446447/how-to-read-a-local-text-file
+function getData(files, strings, values) { // files = array of csv file locations, strings is a blank array filled with file data, values are of the comodities in the order of the csv files
+    var xmlhttp;
+    if (window.XMLHttpRequest) {
+        xmlhttp = new XMLHttpRequest();
+    } else {
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+
+    xmlhttp.onreadystatechange = function () {
+        if (xmlhttp.readyState == 4) {
+            strings.push(xmlhttp.responseText); // adds lines of the file at to the array
+            if (files.length == 0) crunchData(strings, values); // once all files have been retrived
+            if (files.length != 0) getData(files, strings, values); // recursive call, going to next file
+        }
+    }
+
+    xmlhttp.open("GET", files.pop(), true); // getting the end file and removing it from string array
+    xmlhttp.send();
+}
 
 function crunchData(strings, values) {
-    var arrays = [];
-    for (var i = strings.length; i != 0; i--) arrays.push(intoArray(strings.pop()));
+    var arrays = []; // to store the 4 type plots (3D Array)
+    for (var i = strings.length; i != 0; i--) arrays.push(intoArray(strings.pop())); // Converts file strings to 2D Arrays and adds
     arrays.reverse(); // Due to the nature of popping strings, reverse will put the pulled last back to the front
-    console.log("Quantities");
-    console.log(arrays);
-    for (var i = 0; i < arrays.length; i++)
-        for (var j = 0; j < arrays[i].length; j++)
-            for (var k = 0; k < arrays[i][j].length; k++) arrays[i][j][k] *= values[i];
     console.log("Values");
     console.log(arrays);
-    arr = arrays[0];
-    for (var i = 1; i < arrays.length; i++)
+
+    // Going through every array and multiplying their values by their respective worth
+    for (var i = 0; i < arrays.length; i++)
         for (var j = 0; j < arrays[i].length; j++)
-            for (var k = 0; k < arrays[i][j].length; k++) arrays[0][j][k] += arrays[i][j][k];
+            for (var k = 0; k < arrays[i][j].length; k++) arrays[i][j][k] *= values[i]; // 'i' is a type (gold, iron, etc)
+    console.log("Total Worth");
+    console.log(arrays);
+
+    arr = arrays[0]; // initiating the summed array to the sie
+    for (var i = 1; i < arrays.length; i++) // using index 1, since index 0 is the basis of 'arr'
+        for (var j = 0; j < arrays[i].length; j++)
+            for (var k = 0; k < arrays[i][j].length; k++) arr[j][k] += arrays[i][j][k]; 
     console.log("Summed");
     console.log(arr);
+
     afterDataCollected();
 }
 
 function afterDataCollected() {
     // arrayToCSV(arr);
 
-    for (var i = 0; i < arr.length - size; i++) {
-        for (var j = 0; j < arr[0].length - size; j++) {
+    // finding the value of every possible plot
+    for (var i = 0; i < arr[0].length - size; i++) {
+        for (var j = 0; j < arr.length - size; j++) {
             jsonResults.push({
                 total: sumOfSize(i, j),
                 x: i,
                 y: j
             });
         }
-    }
-    jsonResults = jsonResults.sort((a, b) => b.total - a.total);
+    } jsonResults = jsonResults.sort((a, b) => b.total - a.total); // simple lambda function to sort
 
-    var topPlots = [];
-    for (var i = 0; i < 1000; i++) topPlots.push(jsonResults[i]); // do teams * 5 instead of 100 to ensure we claim
+    var topPlots = []; // shortens from 980,100 plots, since the following function getUniquePlots would take a long time
+    for (var i = 0; i < 1000; i++) topPlots.push(jsonResults[i]);
     console.log("Top Plots");
     console.log(topPlots);
-    uniquePlots = getUniquePlots(topPlots);
+
+    uniquePlots = getUniquePlots(topPlots); // removing overlaps from given plots, which many will be due to the high values in cells in the overlaps
     console.log("Top Unique Plots found in " + (new Date().getTime() - startTime) + "ms!");
     console.log(uniquePlots);
     for (var i = 0; i < 15; i++) console.log('x: ' + (uniquePlots[i].x + 1) + ' y: ' + (uniquePlots[i].y + 1) + ' (' + uniquePlots[i].total + ')');
     drawOnCanvas(uniquePlots);
-    drawPlot();
+    // drawPlot(); // Attempted use of plotly
 }
 
+function drawOnCanvas(plots) {
+    var c = document.getElementById("myCanvas");
+    var ctx = c.getContext("2d");
+    ctx.scale(0.5, 0.5);
+    for (var i = 0; i < plots.length; i++) {
+        ctx.fillStyle = randomHex();
+        ctx.fillRect(plots[i].x, plots[i].y, size, size);
+    } console.log("Drawn Canvas in " + (new Date().getTime() - startTime) + "ms!");
+}
+
+// returns a new array of objects, being plots with the greatest value that do not overlap, from given plot array of objects 
+function getUniquePlots(plots) {
+    var uniquePlots = [];
+    for (var i = 0; i < plots.length; i++) {
+        var ovrlp = false; // gpi = greaterPlotIndex
+        for (var gpi = i - 1; gpi > -1 && !ovrlp; gpi--)
+            if (overlap(plots[i], plots[gpi])) ovrlp = true;
+        if (!ovrlp) uniquePlots.push(plots[i]);
+    } return uniquePlots;
+}
+
+// Attempted use at Plotly
 function drawPlot() {
     Plotly.d3.csv('combinedValues.csv', function (err, rows) {
 
@@ -86,40 +133,18 @@ function drawPlot() {
     });
 }
 
-function drawOnCanvas(plots) {
-    var c = document.getElementById("myCanvas");
-    var ctx = c.getContext("2d");
-    ctx.scale(0.5, 0.5);
-    for (var i = 0; i < plots.length; i++) {
-        ctx.fillStyle = randomHex();
-        ctx.fillRect(plots[i].x, plots[i].y, size, size);
-    }
-    console.log("Drawn Canvas in " + (new Date().getTime() - startTime) + "ms!");
-}
-
-function getUniquePlots(plots) {
-    var uniquePlots = [];
-    for (var i = 0; i < plots.length; i++) {
-        var ovrlp = false; // gpi = greaterPlotIndex
-        for (var gpi = i - 1; gpi > -1 && !ovrlp; gpi--)
-            if (overlap(plots[i], plots[gpi])) ovrlp = true;
-        if (!ovrlp) uniquePlots.push(plots[i]);
-    }
-    return uniquePlots;
-}
-
 // https://stackoverflow.com/questions/1152024/best-way-to-generate-a-random-color-in-javascript
 function randomHex() {
     return '#' + (0x1000000 + (Math.random()) * 0xffffff).toString(16).substr(1, 6);
 }
 
+// Used once to give summed csv files in testing alone
 function arrayToCSV(array) {
     var arrString = "";
     for (var i = 0; i < array.length; i++) {
         if (i != 0) arrString += '\n';
         for (var j = 0; j < array[i].length; j++) arrString += array[i][j];
-    }
-    download(arrString, 'combinedValues.csv', 'text/plain');
+    } download(arrString, 'combinedValues.csv', 'text/plain');
 }
 
 // Assume error correction is done before the call, so x is not on the edge and cannot get further data
@@ -129,8 +154,7 @@ function sumOfSize(x, y) {
         for (var j = y; j < y + size; j++) {
             total += parseInt(arr[i][j]);
         }
-    }
-    return total;
+    } return total;
 }
 
 function overlap(plot1, plot2) { // SO MESSY AND ANNOYING BUT WORKS, BLACK BOX THIS FUNCTION
@@ -151,40 +175,21 @@ function overlap(plot1, plot2) { // SO MESSY AND ANNOYING BUT WORKS, BLACK BOX T
     return (xOverlap && yOverlap);
 }
 
-// https://stackoverflow.com/questions/14446447/how-to-read-a-local-text-file
-function getData(files, strings, values) {
-    var xmlhttp;
-    if (window.XMLHttpRequest) {
-        xmlhttp = new XMLHttpRequest();
-    } else {
-        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-    }
 
-    xmlhttp.onreadystatechange = function () {
-        if (xmlhttp.readyState == 4) {
-            strings.push(xmlhttp.responseText);
-            if (files.length == 0) crunchData(strings, values);
-            if (files.length != 0) getData(files, strings, values);
-        }
-    }
-
-    xmlhttp.open("GET", files.pop(), true);
-    xmlhttp.send();
-}
-
+// simply returns a 2D array of data (specified)
 function intoArray(lines) {
     var lineArr = lines.split('\n');
     for (var i = 0; i < lineArr.length - 1; i++) lineArr[i] = lineArr[i].split(',');
     return lineArr;
 }
 
-// Once use snippet
+// Used to generate csv formatted string of example data, x and y are lengths
 function generateTestData(x, y) {
     var buffer = "";
     for (var i = 0; i < y; i++) {
         for (var j = 0; j < x; j++) {
             if (j != 0) buffer += ',';
-            buffer += Math.floor(Math.random() * 100);
+            buffer += Math.floor(Math.random() * 49);
         }
         buffer += '\n';
     }

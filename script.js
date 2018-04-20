@@ -9,13 +9,25 @@ var startTime;
 function init() {
     // download(generateTestData(1000, 1000), 'sample.csv', 'text/plain');
     startTime = new Date().getTime();
-    getData('sample.csv');
+    var values = [15,10,12,7];
+    getData(['ExampleGoldCsv.csv', 'ExampleIronCsv.csv', 'ExampleOilCsv.csv', 'ExampleWheatCsv.csv'],[],values);
+}
+
+
+function crunchData(strings, values) {
+    var arrays = [];
+    for (var i = strings.length; i != 0; i--) arrays.push(intoArray(strings.pop()));
+    arrays.reverse(); // Due to the nature of popping strings, reverse will put the pulled last back to the front
+    console.log("Quantities"); console.log(arrays);
+    for (var i = 0; i < arrays.length; i++) for (var j = 0; j < arrays[i].length; j++) for (var k = 0; k < arrays[i][j].length; k++) arrays[i][j][k] *= values[i];
+    console.log("Values"); console.log(arrays);
+    arr = arrays[0];
+    for (var i = 1; i < arrays.length; i++) for (var j = 0; j < arrays[i].length; j++) for (var k = 0; k < arrays[i][j].length; k++) arrays[0][j][k] += arrays[i][j][k];
+    console.log("Summed"); console.log(arr);
+    afterDataCollected();
 }
 
 function afterDataCollected() {
-    console.log(arr);
-
-    // console.log(sumOfSize(0,0));
     for (var i = 0; i < arr.length - size; i++) {
         for (var j = 0; j < arr[0].length - size; j++) {
             jsonResults.push({ total: sumOfSize(i, j), x: i, y: j });
@@ -46,7 +58,7 @@ function getUniquePlots(plots) {
     var uniquePlots = [];
     for (var i = 0; i < plots.length; i++) {
         var ovrlp = false; // gpi = greaterPlotIndex
-        for (var gpi = i-1; gpi > 0 && !ovrlp; gpi--) if (overlap(plots[i], plots[gpi])) ovrlp = true; 
+        for (var gpi = i-1; gpi > -1 && !ovrlp; gpi--) if (overlap(plots[i], plots[gpi])) ovrlp = true; 
         if (!ovrlp) uniquePlots.push(plots[i]);
     } return uniquePlots;
 }
@@ -81,7 +93,7 @@ function overlap(plot1, plot2) { // SO MESSY AND ANNOYING BUT WORKS, BLACK BOX T
 }
 
 // https://stackoverflow.com/questions/14446447/how-to-read-a-local-text-file
-function getData(name) {
+function getData(files, strings, values) {
     var xmlhttp;
     if (window.XMLHttpRequest) {
         xmlhttp = new XMLHttpRequest();               
@@ -90,21 +102,21 @@ function getData(name) {
     }
 
     xmlhttp.onreadystatechange = function () {               
-        if (xmlhttp.readyState == 4) {                   
-          var lines = xmlhttp.responseText;
-          intoArray(lines);                
+        if (xmlhttp.readyState == 4) {
+          strings.push(xmlhttp.responseText);
+          if (files.length == 0) crunchData(strings, values);
+          if (files.length != 0) getData(files, strings, values);                
         }               
     }
 
-    xmlhttp.open("GET", name, true);
+    xmlhttp.open("GET", files.pop(), true);
     xmlhttp.send();    
 }
 
 function intoArray(lines) {
     var lineArr = lines.split('\n');
     for (var i = 0; i < lineArr.length; i++) lineArr[i] = lineArr[i].split(',');
-    arr = lineArr;
-    afterDataCollected();
+    return lineArr;
 }
 
 // Once use snippet

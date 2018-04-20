@@ -9,8 +9,10 @@ var startTime;
 function init() {
     // download(generateTestData(1000, 1000), 'sample.csv', 'text/plain');
     startTime = new Date().getTime();
-    var values = [15,10,12,7];
-    getData(['ExampleGoldCsv.csv', 'ExampleIronCsv.csv', 'ExampleOilCsv.csv', 'ExampleWheatCsv.csv'],[],values);
+    //var values = [15,10,12,7];
+    //getData(['ExampleGoldCsv.csv', 'ExampleIronCsv.csv', 'ExampleOilCsv.csv', 'ExampleWheatCsv.csv'], [], values);
+    var values = [10,12,9,1.8];
+    getData(['GoldCsv.csv', 'IronCsv.csv', 'OilCsv.csv', 'WheatCsv.csv'], [], values);
 }
 
 
@@ -41,6 +43,7 @@ function afterDataCollected() {
     uniquePlots = getUniquePlots(topPlots);
     console.log("Top Unique Plots found in " + (new Date().getTime() - startTime) + "ms!");
     console.log(uniquePlots);
+    for (var i = 0; i < 15; i++) console.log('x: ' + (uniquePlots[i].x + 1) + ' y: ' + (uniquePlots[i].y + 1) + ' (' + uniquePlots[i].total + ')');
     drawOnCanvas(uniquePlots);
 }
 

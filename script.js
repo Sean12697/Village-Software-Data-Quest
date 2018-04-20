@@ -33,12 +33,13 @@ function afterDataCollected() {
             jsonResults.push({ total: sumOfSize(i, j), x: i, y: j });
         }
     } jsonResults = jsonResults.sort((a, b) => b.total - a.total);
-    console.log(jsonResults);
 
     var topPlots = [];
-    for (var i = 0; i < 100; i++) topPlots.push(jsonResults[i]); // do teams * 5 instead of 100 to ensure we claim
+    for (var i = 0; i < 1000; i++) topPlots.push(jsonResults[i]); // do teams * 5 instead of 100 to ensure we claim
+    console.log("Top Plots");
+    console.log(topPlots);
     uniquePlots = getUniquePlots(topPlots);
-    console.log("100 Top Unique Plots found in " + (new Date().getTime() - startTime) + "ms!");
+    console.log("Top Unique Plots found in " + (new Date().getTime() - startTime) + "ms!");
     console.log(uniquePlots);
     drawOnCanvas(uniquePlots);
 }

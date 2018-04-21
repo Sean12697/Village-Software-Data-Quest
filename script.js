@@ -50,7 +50,7 @@ function crunchData(strings, values) {
     console.log("Total Worth");
     console.log(arrays);
 
-    arr = arrays[0]; // initiating the summed array to the sie
+    arr = arrays[0]; // initiating the summed array to the size
     for (var i = 1; i < arrays.length; i++) // using index 1, since index 0 is the basis of 'arr'
         for (var j = 0; j < arrays[i].length; j++)
             for (var k = 0; k < arrays[i][j].length; k++) arr[j][k] += arrays[i][j][k]; 
@@ -64,12 +64,13 @@ function afterDataCollected() {
     // arrayToCSV(arr);
 
     // finding the value of every possible plot
+    // where we lost the competition for the most prosperous land (winning the Persuasion Award), since i and j where switched
     for (var i = 0; i < arr[0].length - size; i++) {
         for (var j = 0; j < arr.length - size; j++) {
             jsonResults.push({
                 total: sumOfSize(i, j),
-                x: i,
-                y: j
+                x: j, // corrected single lines that lost use the Prosperity Award
+                y: i // corrected single lines that lost use the Prosperity Award
             });
         }
     } jsonResults = jsonResults.sort((a, b) => b.total - a.total); // simple lambda function to sort
